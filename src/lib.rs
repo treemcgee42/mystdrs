@@ -1,3 +1,5 @@
+mod vec;
+
 #[cfg(test)]
 mod tests {
     #[test]
