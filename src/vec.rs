@@ -7,6 +7,7 @@
 use std::alloc::{self, Layout};
 use std::marker::PhantomData;
 use std::mem;
+use std::ops::{Deref, DerefMut};
 use std::ptr::{self, NonNull};
 
 pub struct Vec<T> {
@@ -128,6 +129,47 @@ impl<T> Vec<T> {
         self.len -= 1;
         unsafe {
             return Some(ptr::read(self.ptr.as_ptr().add(self.len)));
+        }
+    }
+}
+
+impl<T> Drop for Vec<T> {
+    fn drop(&mut self) {
+        if self.cap == 0 {
+            return;
+        }
+
+        /* Pop elements until none left */
+        loop {
+            match self.pop() {
+                None => {
+                    break;
+                }
+                Some(_) => {}
+            }
+        }
+
+        /* Deallocate memory */
+        let layout = Layout::array::<T>(self.cap).unwrap();
+        unsafe {
+            alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
+        }
+    }
+}
+
+impl<T> Deref for Vec<T> {
+    type Target = [T];
+    fn deref(&self) -> &[T] {
+        unsafe {
+            return std::slice::from_raw_parts(self.ptr.as_ptr(), self.len);
+        }
+    }
+}
+
+impl<T> DerefMut for Vec<T> {
+    fn deref_mut(&mut self) -> &mut [T] {
+        unsafe {
+            return std::slice::from_raw_parts_mut(self.ptr.as_ptr(), self.len);
         }
     }
 }
